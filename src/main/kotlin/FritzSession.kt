@@ -72,11 +72,14 @@ class FritzSession(private val username: String, private val password: String) {
         }
     }
 
-    private fun request(ain: String, switchcmd: String): String =
-        httpGet("http://fritz.box/webservices/homeautoswitch.lua?ain=$ain&switchcmd=$switchcmd&sid=$sid")
-
-    fun getTemperature(ain: String): Float {
-        return request(ain, "gettemperature").toFloat() / 10
+    private fun request(command: String, ain: String? = null, param: String? = null): String {
+        var url = "http://fritz.box/webservices/homeautoswitch.lua?switchcmd=$command&sid=$sid"
+        if (ain != null) url += "&ain=$ain"
+        if (param != null) url += "&param=$param"
+        return httpGet(url)
     }
+
+    fun getTemperature(ain: String): Float = request("gettemperature", ain).toFloat() / 10
+    fun getDeviceListInfos(): String = request("getdevicelistinfos")
 
 }
