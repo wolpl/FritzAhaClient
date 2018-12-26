@@ -8,13 +8,16 @@ import java.net.URL
 import java.nio.charset.Charset
 import java.security.MessageDigest
 
+/**
+ * A client for accessing the FritzBox AHA-HTTP interface using a username and a password.
+ */
 class FritzSession(private val username: String, private val password: String) {
     companion object {
         private val logger = LoggerFactory.getLogger(FritzSession::class.java)
         private const val EmptySid = "0000000000000000"
 
         private val hexArray = "0123456789ABCDEF".toCharArray()
-        fun ByteArray.toHexString(): String {
+        private fun ByteArray.toHexString(): String {
             val hexChars = CharArray(this.size * 2)
             for (j in this.indices) {
                 val v = this[j].toInt() and 0xFF
@@ -79,7 +82,62 @@ class FritzSession(private val username: String, private val password: String) {
         return httpGet(url)
     }
 
+
+    /**
+     * @return The latest temperature value for the actor specified by [ain].
+     */
     fun getTemperature(ain: String): Float = request("gettemperature", ain).toFloat() / 10
+
+    /**
+     * @return Basic information about all smart home devices as xml.
+     */
     fun getDeviceListInfos(): String = request("getdevicelistinfos")
 
+    /**
+     * @return A comma separated list containing the ain/mac of all known switches.
+     */
+    fun getSwitchList(): String = request("getswitchlist")
+
+    /**
+     * Turns on the switch with the given [ain].
+     * @return The new state of the switch. Should always be On.
+     */
+    fun setSwitchOn(ain: String): SwitchState = SwitchState.parse(request("setswitchon", ain))
+
+    /**
+     * Turns off the switch with the given [ain].
+     * @return The new state of the switch. Should always be Off.
+     */
+    fun setSwitchOff(ain: String): SwitchState = SwitchState.parse(request("setswitchoff", ain))
+
+    /**
+     * Toggles the switch specified by [ain] on or off.
+     * @return The new state of the switch.
+     */
+    fun setSwitchToggle(ain: String): SwitchState = SwitchState.parse(request("setswitchtoggle", ain))
+
+    /**
+     * @return The current state of the switch specified by [ain].
+     */
+    fun getSwitchState(ain: String): SwitchState = SwitchState.parse(request("getswitchstate", ain))
+
+    /**
+     * @return true if the switch specified by [ain] is connected, false otherwise.
+     */
+    fun getSwitchPresent(ain: String): Boolean = request("getswitchpresent", ain) == "1"
+
+    /**
+     * @return The power in mW that is currently taken from the switch specified by [ain].
+     */
+    fun getSwitchPower(ain: String): Float? = request("getswitchpower", ain).toFloatOrNull()
+
+    /**
+     * @return The energy in Wh taken from the switch specified by [ain] since its last reset.
+     */
+    fun getSwitchEnergy(ain: String): Float? = request("getswitchenergy", ain).toFloatOrNull()
+
+    /**
+     * @return The name of the actor specified by [ain].
+     */
+    fun getSwitchName(ain: String): String = request("getswitchname", ain)
 }
