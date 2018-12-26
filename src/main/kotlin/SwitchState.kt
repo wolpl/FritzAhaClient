@@ -1,5 +1,9 @@
 package com.github.wolpl.fritzahaclient
 
+/**
+ * An enum representing the state of a switch.
+ * @since 0.2.0
+ */
 enum class SwitchState {
     On, Off, Invalid;
 
