@@ -14,8 +14,6 @@ package com.github.wolpl.fritzahaclient
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.slf4j.LoggerFactory
-import java.net.HttpURLConnection
-import java.net.URL
 import java.nio.charset.Charset
 import java.security.MessageDigest
 
@@ -45,26 +43,22 @@ class FritzSession(private val username: String, private val password: String) {
     init {
         sid = getSessionId()
         if (sid == EmptySid) logger.warn("Could not get valid SID")
-        println("New SID: $sid")
+        logger.debug("New SID: $sid")
     }
 
     private fun getSessionId(username: String = this.username, password: String = this.password): String {
         fun getXmlValue(document: String, tag: String): String = document.split("<$tag>")[1].split("</$tag>")[0]
 
-
         val url = "http://fritz.box/login_sid.lua"
-        with(URL(url).openConnection() as HttpURLConnection) {
-            requestMethod = "GET"
-            var doc = httpGet(url)
+        var doc = httpGet(url)
+        sid = getXmlValue(doc, "SID")
+        if (sid == "0000000000000000") {
+            val challenge = getXmlValue(doc, "Challenge")
+            val response = createResponse(challenge, password)
+            doc = httpGet("http://fritz.box/login_sid.lua?username=$username&response=$response")
             sid = getXmlValue(doc, "SID")
-            if (sid == "0000000000000000") {
-                val challenge = getXmlValue(doc, "Challenge")
-                val response = createResponse(challenge, password)
-                doc = httpGet("http://fritz.box/login_sid.lua?username=$username&response=$response")
-                sid = getXmlValue(doc, "SID")
-            }
-            return sid
         }
+        return sid
     }
 
     private fun createResponse(challenge: String, password: String): String {
@@ -73,21 +67,19 @@ class FritzSession(private val username: String, private val password: String) {
         return challenge + "-" + digest.toHexString().toLowerCase()
     }
 
-    private fun httpGet(url: String, isFirstTry: Boolean = true): String {
+    private fun httpGet(url: String): String {
         val client = OkHttpClient()
         val request = Request.Builder().url(url).build()
         val response = client.newCall(request).execute()
         return when {
             response.isSuccessful -> response.body()!!.string()
-            isFirstTry -> {
-                getSessionId()
-                httpGet(url, false)
-            }
-            else -> throw RuntimeException("Cannot perform HTTP request!")
+            else -> throw RuntimeException("HTTP Request was not successful! Got response code ${response.code()} ${response.message()}")
         }
     }
 
     private fun request(command: String, ain: String? = null, param: String? = null): String {
+        if (sid == EmptySid) getSessionId()
+        if (sid == EmptySid) throw IllegalStateException("Client does not have a valid sid. Request is aborted! Check the used credentials!")
         var url = "http://fritz.box/webservices/homeautoswitch.lua?switchcmd=$command&sid=$sid"
         if (ain != null) url += "&ain=$ain"
         if (param != null) url += "&param=$param"
