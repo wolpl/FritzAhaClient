@@ -100,10 +100,10 @@ class FritzSession(private val username: String, private val password: String) {
     fun getDeviceListInfosRaw(): String = request("getdevicelistinfos")
 
     /**
-     * @return A comma separated list containing the ain/mac of all known switches.
+     * @return A list containing the ain/mac of all known switches.
      * @since 0.2.0
      */
-    fun getSwitchList(): String = request("getswitchlist")
+    fun getSwitchList(): List<String> = request("getswitchlist").split(",")
 
     /**
      * Turns on the switch with the given [ain].
