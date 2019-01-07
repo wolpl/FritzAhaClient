@@ -4,6 +4,7 @@
 
 A Kotlin/JVM client for accessing the AVM Fritzbox AHA-HTTP Interface.
 ## Usage in your gradle project
+### 1. Include dependency
 ``` gradle
 allprojects {
     repositories {
@@ -17,3 +18,11 @@ dependencies {
     implementation 'com.github.wolpl:FritzAhaClient:Tag'
 }
 ```
+### 2. Use a FritzSession
+````kotlin
+fun main(){
+    val session = FritzSession("username", "password")
+    val switches = session.getSwitchList()
+    println("Available switches: $switches")
+}
+````
