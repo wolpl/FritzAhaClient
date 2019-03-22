@@ -83,17 +83,32 @@ class FritzSession(
         val response = client.newCall(request).execute()
         return when {
             response.isSuccessful -> response.body()!!.string()
-            else -> throw RuntimeException("HTTP Request was not successful! Got response code ${response.code()} ${response.message()}")
+            else -> throw HttpRequestException(
+                response.code(),
+                "HTTP Request was not successful! Got response code ${response.code()} ${response.message()}"
+            )
         }
     }
 
-    private fun request(command: String, ain: String? = null, param: String? = null): String {
+    private fun request(
+        command: String,
+        ain: String? = null,
+        param: String? = null,
+        tryNewSidOnFailure: Boolean = true
+    ): String {
         if (sid == EmptySid) getSessionId()
         if (sid == EmptySid) throw IllegalStateException("Client does not have a valid sid. Request is aborted! Check the used credentials!")
         var query = "switchcmd=$command&sid=$sid"
         if (ain != null) query += "&ain=$ain"
         if (param != null) query += "&param=$param"
-        return httpGet("webservices/homeautoswitch.lua", query)
+        return try {
+            httpGet("webservices/homeautoswitch.lua", query)
+        } catch (e: HttpRequestException) {
+            if (e.code == 403 && tryNewSidOnFailure) {
+                sid = getSessionId()
+                request(command, ain, param, false)
+            } else throw e
+        }
     }
 
 
@@ -206,4 +221,6 @@ class FritzSession(
      * @since 0.2.0
      */
     fun getTemplateListInfosRaw(): String = request("gettemplatelistinfos")
+
+    class HttpRequestException(val code: Int, message: String, cause: Throwable? = null) : Throwable(message, cause)
 }
