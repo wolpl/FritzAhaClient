@@ -1,5 +1,5 @@
 # FritzAhaClient
-[![](https://jitpack.io/v/wolpl/FritzAhaClient.svg)](https://jitpack.io/#wolpl/FritzAhaClient)
+[![Build Status](https://travis-ci.org/wolpl/FritzAhaClient.svg?branch=master)](https://travis-ci.org/wolpl/FritzAhaClient) [![](https://jitpack.io/v/wolpl/FritzAhaClient.svg)](https://jitpack.io/#wolpl/FritzAhaClient)
 
 
 A Kotlin/JVM client for accessing the AVM Fritzbox AHA-HTTP Interface.
